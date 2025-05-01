@@ -1,0 +1,17 @@
+- name: Download and install K3s binary
+  shell: |
+    curl -sfL https://get.k3s.io | sh -
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Wait for K3s service
+  systemd:
+    name: k3s
+    state: started
+    enabled: true
+
+- name: Fetch KUBECONFIG
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ./kubeconfig
+    flat: yes

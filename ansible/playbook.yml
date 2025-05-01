@@ -1,0 +1,93 @@
+# 1) All machines: install Docker
+- hosts: all
+  become: true
+  roles:
+    - docker
+
+# 2) K3s master: install & retrieve kubeconfig + node-token
+- hosts: k3s_servers
+  become: true
+  roles:
+    - k3s-master
+
+  tasks:
+    - name: Read K3s node-token from master
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: node_token_raw
+      changed_when: false
+
+    - name: Set node_token fact for downstream plays
+      set_fact:
+        node_token: "{{ node_token_raw.stdout | trim }}"
+
+# 3) K3s agents: join the cluster using the token
+- hosts: k3s_agents
+  become: true
+
+  tasks:
+    - name: "Debug: show token fetched from master"
+      debug:
+        msg: "Using K3s token {{ hostvars[ groups['k3s_servers'][0] ].node_token }}"
+
+    - name: Install K3s agent with master token
+      shell: |
+        curl -sfL https://get.k3s.io \
+          | sh -s - agent \
+            --server https://{{ groups['k3s_servers'][0] }}:6443 \
+            --token {{ hostvars[ groups['k3s_servers'][0] ].node_token }}
+      args:
+        creates: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_install
+
+    - name: Reload systemd daemon so it notices k3s-agent unit
+      systemd:
+        daemon_reload: yes
+
+    - name: Ensure k3s-agent is enabled & running
+      systemd:
+        name: k3s-agent
+        enabled: yes
+        state: started
+
+# 4) Jenkins server
+- hosts: jenkins
+  become: true
+
+  tasks:
+    - name: Install Java (Jenkins requirement)
+      apt:
+        name: openjdk-17-jre-headless
+        state: present
+        update_cache: yes
+
+    - name: Add Jenkins apt key
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io.key
+        state: present
+
+    - name: Add Jenkins apt repository
+      apt_repository:
+        repo: 'deb https://pkg.jenkins.io/debian-stable binary/'
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: latest
+        update_cache: yes
+
+    - name: Ensure Jenkins service is enabled and started
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+
+  roles:
+    - jenkins
+
+# 5) Monitoring on the master
+- hosts: k3s_servers
+  become: true
+  roles:
+    - prometheus
+    - grafana

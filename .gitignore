@@ -1,0 +1,52 @@
+# Terraform state and variables
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+terraform.tfvars
+terraform.tfstate.backup
+
+# Sensitive info
+*.pem
+*.key
+*.crt
+*.pub
+
+# SSH keys and secrets
+id_rsa*
+*.secret
+
+# Ansible
+*.retry
+ansible.cfg
+*.vault
+
+# Kubernetes
+*.kubeconfig
+.kube/
+kubectl-config.yaml
+
+# Helm
+*.tgz
+Chart.lock
+
+# Docker
+*.log
+Dockerfile.local
+docker-compose.override.yml
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Misc temporary files
+tmp/
+*.tmp
+*.bak

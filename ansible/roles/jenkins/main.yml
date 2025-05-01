@@ -1,0 +1,48 @@
+# ansible/roles/jenkins/tasks/main.yml
+- name: Ensure Docker group exists
+  group:
+    name: docker
+    state: present
+
+- name: Add Jenkins user to the docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
+
+- name: Restart Docker so the socket is recreated with correct group ownership
+  service:
+    name: docker
+    state: restarted
+
+- name: Restart Jenkins so it picks up new group membership
+  service:
+    name: jenkins
+    state: restarted
+
+- name: Ensure OpenJDK 17 is installed
+  apt:
+    name: openjdk-17-jre-headless
+    state: present
+    update_cache: yes
+
+- name: Make Java 17 the default java
+  become: true
+  shell: |
+    update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1717 \
+    && update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+  args:
+    warn: false
+
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: latest
+    update_cache: yes
+    
+
+- name: Ensure Jenkins service is enabled and started
+  systemd:
+    name: jenkins
+    enabled: yes
+    state: started
