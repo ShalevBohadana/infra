@@ -41,13 +41,12 @@ resource "aws_security_group" "portfolio" {
 
   # Kubernetes API (master ↔ agents)
   ingress {
-    description = "Kubernetes API"
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]     # your VPC CIDR
-  }
-
+  description = "Kubernetes API"
+  from_port   = 6443
+  to_port     = 6443
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
   # NodePort range (for NodePort Services)
   ingress {
     description = "NodePort range"

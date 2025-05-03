@@ -1,0 +1,21 @@
+- name: download helm archive
+  get_url:
+    url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    dest: /tmp/helm.tgz
+
+- name: unpack helm
+  unarchive:
+    src: /tmp/helm.tgz
+    dest: /usr/local/bin/
+    copy: no
+    creates: /usr/local/bin/linux-amd64/helm
+
+- name: move helm binary into PATH
+  command: mv /usr/local/bin/linux-amd64/helm /usr/local/bin/helm
+  args:
+    creates: /usr/local/bin/helm
+
+- name: clean up helm tarball
+  file:
+    path: /usr/local/bin/linux-amd64
+    state: absent
